@@ -98,56 +98,41 @@ app.get('/logout', (req, res) => {
   });
 });
 
+
 app.post('/add-to-cart', (req, res) => {
-
-  const productId = req.body.productId;
-
+  const productId = parseInt(req.body.productId);
   const quantity = parseInt(req.body.quantity, 10);
-  let cartItem;
-
+  console.log("product id is " , productId)
+  console.log("product quantity is " , quantity)
+  console.log("product data " , products)
   // Find the product in your data based on the productId
-
-const product = products.find((p) => p.id === productId);
-
-  
+  const product = products.find((p) => p.id === productId);
 
   if (product) {
-
     // Calculate the total price for the cart item
-
     const total = product.price * quantity;
 
-  
-
-    // Create a cart item object and add it to the cart array
-
+    // Create a cart item object
     const cartItem = {
-
-    productId: product.id,
-
-    name: product.name,
-
-    quantity: quantity,
-
-    price: product.price,
-
-    total: total,
-
+      productId: product.id,
+      name: product.name,
+      quantity: quantity,
+      price: product.price,
+      total: total,
     };
 
+    // Push the cartItem to the cart array in the session
+    req.session.cart = req.session.cart || [];
+    req.session.cart.push(cartItem);
 
-    res.render('products', { products, cartItem });
-    cart.push(cartItem);
-
+    // Redirect to the 'cart' page after adding the item
+    res.redirect('/products');
+  } else {
+    // Handle the case where the product was not found
+    res.status(404).send('Product not found');
   }
+});
 
-  
-
-  // Redirect the user back to the product selection page
-
-  res.redirect('/products');
-
-  });
 
   function isUsernameTaken(username, callback) {
     let isTaken = false
