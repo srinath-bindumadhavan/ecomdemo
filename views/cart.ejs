@@ -1,0 +1,27 @@
+<!-- views/cart.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cart</title>
+  <link rel="stylesheet" href="/styles.css"> 
+</head>
+<body>
+  <h1>Your Cart</h1>
+  <ul>
+    <% cart.forEach((item) => { %>
+      <li>
+        <p><%= item.name %> (Quantity: <%= item.quantity %>)</p>
+        <p>Price: $<%= item.price %> each</p>
+        <p>Total: $<%= item.total %></p>
+      </li>
+    <% }); %>
+  </ul>
+
+  <!-- Display the cart variable for debugging (remove in production) -->
+  <pre>
+    <%- JSON.stringify(cart, null, 2) %>
+  </pre>
+</body>
+</html>

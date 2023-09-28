@@ -1,0 +1,36 @@
+<!-- views/products.ejs -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Product Selection</title>
+  <link rel="stylesheet" href="/styles.css"> <!-- Link to your CSS file -->
+</head>
+<body>
+  <a href="/cart">View Cart</a>
+  <ul>
+  <% cart.forEach((item) => { %>
+    <li><%= item.name %> (Quantity: <%= item.quantity %>)</li>
+  <% }); %>
+
+</ul>
+
+  <h1>Product Selection</h1>
+  <ul>
+    <% products.forEach((product) => { %>
+      <li>
+        <h2><%= product.name %></h2>
+        <p><%= product.description %></p>
+        <p>Price: $<%= product.price %></p>
+        <form action="/add-to-cart" method="POST">
+          <input type="hidden" name="productId" value="<%= product.id %>">
+          <label for="quantity">Quantity:</label>
+          <input type="number" name="quantity" id="quantity" value="1" min="1">
+          <button type="submit">Add to Cart</button>
+        </form>
+      </li>
+    <% }); %>
+  </ul>
+</body>
+</html>
