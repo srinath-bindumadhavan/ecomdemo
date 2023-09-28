@@ -1,38 +1,47 @@
 const express = require('express');
-
 const app = express();
-
 const port = process.env.PORT || 3000;
-
 const bodyParser = require('body-parser');
-
- 
-
-// TO DO:
-
-// 1. Login page logic
-
-// 2. Add cart outline
-
-// 3. Add login error message: fix login.ejs form
-
-// 4. Add product Selection
-
- 
-
+const csv = require('csv-parser');
+const fs = require('fs');
+const session = require('express-session');
 app.set('view engine', 'ejs');
 
 app.set('views', __dirname + '/views');
+// Set up session middleware
+app.use(session({
+  secret: 'your_secret_key',
+  resave: false,
+  saveUninitialized: true
+}));
 
- 
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
-// Users (should be stored in a database)
+// Function to check login credentials against the CSV file
+function checkLogin(username, password, callback) {
+  fs.createReadStream('user_credentials.csv')
+    .pipe(csv())
+    .on('data', (row) => {
+      if (row.username === username && row.password === password) {
+        // Match found, user is authenticated
+        callback(true);
+      }
+    })
+    .on('end', () => {
+      // No match found, user is not authenticated
+      callback(false);
+    });
+}
 
-const users = [{ username: 'srinath', password: '3' }];
+// Middleware to check if the user is authenticated
+function isAuthenticated(req, res, next) {
+  if (req.session.isAuthenticated) {
+    return next();
+  }
+  res.redirect('/login');
+}
 
- 
-
-// Products
 
 const products = [
 
@@ -44,73 +53,34 @@ const products = [
 
 ];
 
- 
-
 var cart = [];
 let cartItem;   
- 
 
-app.use(express.static('public'));
 
-app.use(bodyParser.urlencoded({ extended: false }));
-
-app.use(bodyParser.json());
-
- 
-
-// Login Page
-
+// Routes
 app.get('/', (req, res) => {
-
   res.render('login');
-
 });
 
- 
-
-// Product Selection Page
-
-app.get('/products', (req, res) => {
-
-  res.render('products', { products , cart});
-
+app.get('/products', isAuthenticated, (req, res) => {
+  res.render('products', { products, cart: req.session.cart });
 });
 
- 
-
-// Handle User Login
+app.get('/cart', isAuthenticated, (req, res) => {
+  res.render('cart', { cart: req.session.cart });
+});
 
 app.post('/login', (req, res) => {
-
   const { username, password } = req.body;
-
- 
-
-  // Match user (should be checked against a database)
-
-  const user = users.find((user) => user.username === username && user.password === password);
-
- 
-
-  if (user) {
-
-    // Success: Redirect to product selection page
-
-    res.redirect('/products');
-
-  } else {
-
-    // Fail: Display login error message
-
-    res.render('login', { errorMessage: 'Invalid username or password' });
-
-  }
-
-});
-
- 
-
-// Add to Cart Route
+  checkLogin(username, password, (isAuthenticated) => {
+    if (isAuthenticated) {
+      req.session.isAuthenticated = true;
+      req.session.cart = [];
+      res.redirect('/products');
+    } else {
+      res.render('login', { errorMessage: 'Invalid username or password' });
+    }
+  });
 
 app.post('/add-to-cart', (req, res) => {
 
@@ -123,7 +93,7 @@ app.post('/add-to-cart', (req, res) => {
 
 const product = products.find((p) => p.id === productId);
 
- 
+  
 
   if (product) {
 
@@ -131,7 +101,7 @@ const product = products.find((p) => p.id === productId);
 
     const total = product.price * quantity;
 
- 
+  
 
     // Create a cart item object and add it to the cart array
 
@@ -155,28 +125,17 @@ const product = products.find((p) => p.id === productId);
 
   }
 
- 
+  
 
   // Redirect the user back to the product selection page
 
   res.redirect('/products');
 
-});
-
- 
-
-// Cart Page
-
-app.get('/cart', (req, res) => {
-
-  res.render('cart', { cart: cart });
+  });
 
 });
 
- 
-
+// Start the server
 app.listen(port, () => {
-
   console.log(`Server is running on port ${port}`);
-
 });
