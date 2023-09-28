@@ -62,6 +62,10 @@ app.get('/', (req, res) => {
   res.render('login');
 });
 
+app.get('/register-form', (req, res) => {
+  res.render('register' , { errorMessage: req.session.errorMessage });
+});
+
 app.get('/products', isAuthenticated, (req, res) => {
   res.render('products', { products, cart: req.session.cart });
 });
@@ -80,7 +84,19 @@ app.post('/login', (req, res) => {
     } else {
       res.render('login', { errorMessage: 'Invalid username or password' });
     }
+  })
+});
+
+app.get('/logout', (req, res) => {
+  // Destroy the user's session to log them out
+  req.session.destroy((err) => {
+    if (err) {
+      console.error('Error destroying session:', err);
+    }
+    // Redirect the user to the login page
+    res.redirect('/');
   });
+});
 
 app.post('/add-to-cart', (req, res) => {
 
@@ -133,7 +149,54 @@ const product = products.find((p) => p.id === productId);
 
   });
 
-});
+  function isUsernameTaken(username, callback) {
+    let isTaken = false
+    const readStream =fs.createReadStream('user_credentials.csv')
+    readStream
+      .pipe(csv())
+      .on('data', (row) => {
+        if (row.username === username) {
+          // Username is already taken
+          isTaken = true;
+          console.log("Matched!!")
+        }
+      })
+      .on('end', () => {
+        callback(isTaken);
+      });
+  }
+  
+  // Route for handling the registration form submission
+  app.post('/register', (req, res) => {
+    const { username, password } = req.body;
+    console.log('Starting!')
+    // Check if the username is already taken
+    isUsernameTaken(username, (usernameTaken) => {
+      if (usernameTaken) {
+        // Username is already taken, display an error message
+        res.render('register', { errorMessage: 'Username already exists' });
+        console.log('Username taken! printed error message and should stop here')
+
+        return;
+      } 
+      // Username is available, add the new user to the CSV file
+      const newUser = { username, password };
+      console.log('uh-oh')
+      // Append the new user to the CSV file
+      const csvData = `${newUser.username},${newUser.password}\n`;
+      fs.appendFile('user_credentials.csv', csvData, (err) => {
+        if (err) {
+          console.error('Error writing to CSV file:', err);
+          res.render('register', { errorMessage: 'Registration failed' });
+        } else {
+          // Registration successful, redirect to the login page
+          res.redirect('/');
+        }
+        });
+      
+    });
+  });
+
 
 // Start the server
 app.listen(port, () => {
